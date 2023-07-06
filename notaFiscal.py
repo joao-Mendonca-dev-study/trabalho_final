@@ -158,6 +158,21 @@ class ControllerCriaNotaFicasl:
         self.limiteCadastraNotaFiscal.inputCpfCliente.delete(
             0, len(self.limiteCadastraNotaFiscal.inputCpfCliente.get())
         )
+        self.limiteCadastraNotaFiscal.inputQuantProd.delete(
+            0, len(self.limiteCadastraNotaFiscal.inputQuantProd.get())
+        )
+        self.limiteCadastraNotaFiscal.inputNumNotaInput.delete(
+            0, len(self.limiteCadastraNotaFiscal.inputNumNotaInput.get())
+        )
+        self.limiteCadastraNotaFiscal.inputDataNota.delete(
+            0, len(self.limiteCadastraNotaFiscal.inputDataNota.get())
+        )
+
+        # idNota, idProduto, idCliente, dataEmissao, quantidade
+
+        strTextoNota = f"{self.listaNotaFiscal[-1].idNota}\n {self.listaNotaFiscal[-1].idProduto}\n {self.listaNotaFiscal[-1].idCliente}\n{self.listaNotaFiscal[-1].dataEmissao}\n {self.listaNotaFiscal[-1].quantidade}"
+
+        self.limiteAviso = LimiteAvisos("Sucesso", strTextoNota)
 
         self.salvaListaNotaFisca()
 
@@ -177,6 +192,7 @@ class ControllerCriaNotaFicasl:
     def enterQuantProd(self, event):
         self.ctrlProduto.atualizaListaProdutos()
         indice = self.limiteCadastraNotaFiscal.listBox.curselection()
+        flagCadastra = False
         if indice:
             produtoSlc = self.limiteCadastraNotaFiscal.listBox.get(indice)
             produto = self.ctrlProduto.getProdutoDesc(produtoSlc)
@@ -188,44 +204,51 @@ class ControllerCriaNotaFicasl:
                     )
                 else:
                     quantidade = quantidadeSlc
+                    flagCadastra = True
+
             else:
                 self.limiteAviso = LimiteAvisos("Erro", "Nenhuma quantidade")
         else:
             self.limiteAviso = LimiteAvisos("Erro", "Nenhum produto selecionado")
 
-        ####################
-        idNotaFiscal = self.limiteCadastraNotaFiscal.inputNumNotaInput.get()
+        if flagCadastra:
+            ####################
+            idNotaFiscal = self.limiteCadastraNotaFiscal.inputNumNotaInput.get()
 
-        inputCliente = self.limiteCadastraNotaFiscal.inputCpfCliente.get()
-        if inputCliente is None:
-            self.limiteAviso = LimiteAvisos("Erro", "Nenhum cliente selecionado")
+            inputCliente = self.limiteCadastraNotaFiscal.inputCpfCliente.get()
+            if inputCliente is None:
+                self.limiteAviso = LimiteAvisos("Erro", "Nenhum cliente selecionado")
+            else:
+                clienteSlc = self.ctrlCliente.getCliente(int(inputCliente))
+
+            if clienteSlc is None:
+                self.limiteAviso = LimiteAvisos("Erro", "Cliente não encontrado")
+            else:
+                idCliente = clienteSlc.cpf
+
+            indice = self.limiteCadastraNotaFiscal.listBox.curselection()
+            if indice:
+                # Obtém o valor da linha selecionada
+                produtoSlc = self.limiteCadastraNotaFiscal.listBox.get(indice)
+                produto = self.ctrlProduto.getProdutoDesc(produtoSlc)
+                idProduto = produto.codNum
+            else:
+                self.limiteAviso = LimiteAvisos("Erro", "Nenhum produto selecionado")
+
+            dataLancamento = self.limiteCadastraNotaFiscal.inputDataNota.get()
+            if dataLancamento is None:
+                self.limiteAviso = LimiteAvisos("Erro", "Adicione data a nota fiscal")
+
+            notaFiscal = NotaFiscal(
+                idNotaFiscal, idProduto, idCliente, dataLancamento, quantidade
+            )
+            self.listaNotaFiscal.append(notaFiscal)
+
+            self.limiteMostra = LimiteAvisos(
+                "Sucesso", "Produto adicionado a nota fiscal"
+            )
         else:
-            clienteSlc = self.ctrlCliente.getCliente(int(inputCliente))
-
-        if clienteSlc is None:
-            self.limiteAviso = LimiteAvisos("Erro", "Cliente não encontrado")
-        else:
-            idCliente = clienteSlc.cpf
-
-        indice = self.limiteCadastraNotaFiscal.listBox.curselection()
-        if indice:
-            # Obtém o valor da linha selecionada
-            produtoSlc = self.limiteCadastraNotaFiscal.listBox.get(indice)
-            produto = self.ctrlProduto.getProdutoDesc(produtoSlc)
-            idProduto = produto.codNum
-        else:
-            self.limiteAviso = LimiteAvisos("Erro", "Nenhum produto selecionado")
-
-        dataLancamento = self.limiteCadastraNotaFiscal.inputDataNota.get()
-        if dataLancamento is None:
-            self.limiteAviso = LimiteAvisos("Erro", "Adicione data a nota fiscal")
-
-        notaFiscal = NotaFiscal(
-            idNotaFiscal, idProduto, idCliente, dataLancamento, quantidade
-        )
-        self.listaNotaFiscal.append(notaFiscal)
-
-        self.limiteMostra = LimiteAvisos("Sucesso", "Produto adicionado a nota fiscal")
+            self.limiteMostra = LimiteAvisos("Erro", "Produto não inserido")
 
     def carregaNotaFiscal(self):
         if not os.path.isfile("NotaFiscal.pickle"):
