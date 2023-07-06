@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import END, messagebox
 import os.path
 import pickle
+import produto
 
 
 class Cliente:
@@ -130,6 +131,51 @@ class LimiteMostraClientes:
     def __init__(self, str):
         messagebox.showinfo("Clientes Cadastrados: ", str)
 
+class LimiteMostraFatura(tk.Toplevel):
+    def __init__(self, controle):
+        tk.Toplevel.__init__(self)
+        self.geometry("250x200")
+        self.title("Consultar Produto")
+        self.controle = controle
+
+        self.frameCodNum = tk.Frame(self)
+        self.frameButton = tk.Frame(self)
+        self.dadosUm = tk.Frame(self)
+        self.dadosDois = tk.Frame(self)
+
+        self.frameCodNum.pack()
+        self.frameButton.pack()
+        self.dadosUm.pack(padx=10, pady=10)
+        self.dadosDois.pack(padx=10, pady=10)
+
+        self.labelCodNum = tk.Label(self.frameCodNum, text="Digite o CPF do Cliente")
+        self.labelCodNum.pack(side="left")
+
+        self.inputCodNum = tk.Entry(self.frameCodNum, width=10)
+        self.inputCodNum.pack(side="left")
+
+        self.buttonSubmit = tk.Button(self.frameButton, text="Enter")
+        self.buttonSubmit.pack(side="left")
+        self.buttonSubmit.bind("<Button>", controle.consultaFaturamentoEnter)
+
+        self.buttonFecha = tk.Button(self.frameButton, text="Concluído")
+        self.buttonFecha.pack(side="left")
+        self.buttonFecha.bind("<Button>", controle.fechaHandlerFaturamento)
+
+        self.labelNome = tk.Label(self.dadosUm, text="Nome")
+        self.labelNome.pack(side="left")
+
+        self.inputNome = tk.Entry(self.dadosUm, width=10, state="disabled")
+        self.inputNome.pack(side="left")
+
+        self.labelQtde = tk.Label(self.dadosDois, text="Total")
+        self.labelQtde.pack(side="left")
+
+        self.inputQtde = tk.Entry(self.dadosDois, width=10, state="disabled")
+        self.inputQtde.pack(side="left")
+
+    def mostraJanela(self, titulo, msg):
+        messagebox.showinfo(titulo, msg)
 
 class LimiteAlertaCliente:
     def __init__(self, titulo, msg):
@@ -140,6 +186,7 @@ class ControllerCliente:
     def __init__(self, controlador):
         self.controlador = controlador
         self.listaClientes = []
+        self.listaProdutos = []
 
         if not os.path.isfile("Clientes.pickle"):
             self.listaClientes = []
@@ -242,3 +289,48 @@ class ControllerCliente:
 
     def consultarCliente(self):
         self.consultaCliente = ConsultaCliente(self)
+
+    def consultaFaturamentoEnter(self, event):
+        codigo = int(self.limiteConsultaFaturamento.inputCodNum.get())
+        total = 0
+        self.atualizaListaNf()
+        for nf in self.listaNF:
+            if nf.idCliente == codigo:
+                total += nf.quantidade
+
+        try:
+            cliente = self.getCliente(codigo)
+            if(cliente):
+                valor = cliente.valorVenda * total
+                self.limiteConsultaFaturamento.inputQtde.config(state="normal")
+                self.limiteConsultaFaturamento.inputQtde.delete(0, END)
+                self.limiteConsultaFaturamento.inputQtde.insert(0, valor)
+                self.limiteConsultaFaturamento.inputQtde.config(state="readonly")
+                self.limiteConsultaFaturamento.inputNome.config(state="normal")
+                self.limiteConsultaFaturamento.inputNome.delete(0, END)
+                self.limiteConsultaFaturamento.inputNome.insert(0, cliente.nome)
+                self.limiteConsultaFaturamento.inputNome.config(state="readonly")
+            else:
+                self.limiteConsultaFaturamento.mostraJanela("Erro", "Cliente nao existente")
+        except ValueError as error:
+            self.limiteConsultaFaturamento.mostraJanela("Erro", "Cliente nao existente")
+
+    def mostraFaturamento(self):
+        self.limiteConsultaFaturamento = LimiteMostraFatura(self)
+
+    def fechaHandlerFaturamento(self, event):
+        self.limiteConsultaFaturamento.destroy()
+
+    def atualizaListaNf(self):
+        if not os.path.isfile("NotaFiscal.pickle"):
+            self.listaNF = []
+        else:
+            with open("NotaFiscal.pickle", "rb") as f:
+                self.listaNF = pickle.load(f)
+    
+    def atualizaListaProdutos(self):
+        if not os.path.isfile("Produtos.pickle"):
+            self.listaProdutos = []
+        else:
+            with open("Produtos.pickle", "rb") as f:
+                self.listaProdutos = pickle.load(f)

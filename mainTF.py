@@ -43,7 +43,7 @@ class LimitePrincipal:
         self.consultaMenu.add_command(
             label="Faturamento por Produtos", command=self.controle.mostraFaturamento
         )
-        self.consultaMenu.add_command(label="Faturamento por Clientes")
+        self.consultaMenu.add_command(label="Faturamento por Clientes", command=self.controle.mostraFaturamentoCliente)
         self.consultaMenu.add_command(label="Faturamento no Periodo")
         self.consultaMenu.add_command(label="Lucro no Periodo")
         self.consultaMenu.add_command(label="Vendas para Cliente")
@@ -102,6 +102,10 @@ class ControlePrincipal:
 
     def mostraFaturamento(self):
         self.ctrlProduto.mostraFaturamento()
+    
+    def mostraFaturamentoCliente(self):
+        self.ctrlCliente.mostraFaturamento()
+
 
 
 if __name__ == "__main__":

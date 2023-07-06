@@ -116,9 +116,13 @@ class LimiteMostraFatura(tk.Toplevel):
 
         self.frameCodNum = tk.Frame(self)
         self.frameButton = tk.Frame(self)
+        self.dadosUm = tk.Frame(self)
+        self.dadosDois = tk.Frame(self)
 
         self.frameCodNum.pack()
         self.frameButton.pack()
+        self.dadosUm.pack(padx=10, pady=10)
+        self.dadosDois.pack(padx=10, pady=10)
 
         self.labelCodNum = tk.Label(self.frameCodNum, text="Digite o código do produto")
         self.labelCodNum.pack(side="left")
@@ -133,6 +137,18 @@ class LimiteMostraFatura(tk.Toplevel):
         self.buttonFecha = tk.Button(self.frameButton, text="Concluído")
         self.buttonFecha.pack(side="left")
         self.buttonFecha.bind("<Button>", controle.fechaHandlerFaturamento)
+
+        self.labelNome = tk.Label(self.dadosUm, text="Nome")
+        self.labelNome.pack(side="left")
+
+        self.inputNome = tk.Entry(self.dadosUm, width=10, state="disabled")
+        self.inputNome.pack(side="left")
+
+        self.labelQtde = tk.Label(self.dadosDois, text="Total")
+        self.labelQtde.pack(side="left")
+
+        self.inputQtde = tk.Entry(self.dadosDois, width=10, state="disabled")
+        self.inputQtde.pack(side="left")
 
     def mostraJanela(self, titulo, msg):
         messagebox.showinfo(titulo, msg)
@@ -317,7 +333,7 @@ class ControlProduto:
 
     def mostraProdutos(self):
         self.atualizaListaProdutos()
-        strTexto = "Código -- Descrição  --  Quantidade\n"
+        strTexto = "Código -- Descrição  --  Quantidade -- Valor Venda\n"
         for prod in self.listaProdutos:
             strTexto += (
                 str(prod.codNum)
@@ -326,6 +342,8 @@ class ControlProduto:
                 + " -- "
                 + str(prod.quantEstoq)
                 + "\n"
+                + str(prod.valorVenda)
+                +"\n"
             )
         self.limiteLista = LimiteMostraProdutos(strTexto)
 
@@ -362,20 +380,29 @@ class ControlProduto:
 
     def consultaFaturamentoEnter(self, event):
         codigo = int(self.limiteConsultaFaturamento.inputCodNum.get())
-
+        total = 0
         self.atualizaListaNf()
         for nf in self.listaNF:
-            total = 0
             if nf.idProduto == codigo:
                 total += nf.quantidade
-            valor = 0
-            for prod in self.listaProdutos:
-                if prod.codNum == codigo:
-                    valor = prod.valorVenda * total
 
-        self.limiteConsultaFaturamento.mostraJanela(
-            "Valor do faturamento", "R$" + str(valor)
-        )
+        try:
+            produto = self.getProduto(codigo)
+            if(produto):
+                valor = produto.valorVenda * total
+                self.limiteConsultaFaturamento.inputQtde.config(state="normal")
+                self.limiteConsultaFaturamento.inputQtde.delete(0, END)
+                self.limiteConsultaFaturamento.inputQtde.insert(0, valor)
+                self.limiteConsultaFaturamento.inputQtde.config(state="readonly")
+                self.limiteConsultaFaturamento.inputNome.config(state="normal")
+                self.limiteConsultaFaturamento.inputNome.delete(0, END)
+                self.limiteConsultaFaturamento.inputNome.insert(0, produto.descricao)
+                self.limiteConsultaFaturamento.inputNome.config(state="readonly")
+            else:
+                self.limiteConsultaFaturamento.mostraJanela("Erro", "Produto nao existente")
+        except ValueError as error:
+            self.limiteConsulta.mostraJanela("Erro", "Produto nao existente")
+
 
     def fechaHandlerFaturamento(self, event):
         self.limiteConsultaFaturamento.destroy()
