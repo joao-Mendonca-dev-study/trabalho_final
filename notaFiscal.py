@@ -18,6 +18,10 @@ class NotaFiscal:
 
     @property
     def idNota(self):
+        return self.__idNota
+
+    @property
+    def idProduto(self):
         return self.__idProduto
 
     @property
@@ -36,24 +40,38 @@ class NotaFiscal:
 class LimiteNotaFiscal(tk.Toplevel):
     def __init__(self, controle, listaProdutos, listaCliente):
         tk.Toplevel.__init__(self)
-        self.geometry("600x350")
+        self.geometry("300x400")
         self.title("Gerar Nota Fiscal de Venda")
         self.controle = controle
         self.listaProdutos = listaProdutos
 
+        self.frameNumNota = tk.Frame(self)
         self.frameCpfCliente = tk.Frame(self)
         self.frameListBox = tk.Frame(self)
         self.frameButton = tk.Frame(self)
         self.frameFechaNota = tk.Frame(self)
+        self.frameData = tk.Frame(self)
 
+        self.frameNumNota.pack()
+        self.frameData.pack()
         self.frameCpfCliente.pack()
         self.frameListBox.pack()
         self.frameButton.pack()
+        self.frameCpfCliente.pack()
         self.frameFechaNota.pack()
+
+        self.labelNumNota = tk.Label(self.frameNumNota, text="Número da Nota")
+        self.labelNumNota.pack(side="left")
+        self.inputNumNotaInput = tk.Entry(self.frameNumNota, width=11)
+        self.inputNumNotaInput.pack(side="left")
+
+        self.labelData = tk.Label(self.frameData, text="Escolha a data formato: dd/mm")
+        self.labelData.pack(side="left")
+        self.inputDataNota = tk.Entry(self.frameData, width=11)
+        self.inputDataNota.pack(side="left")
 
         self.labelCpfCliente = tk.Label(self.frameCpfCliente, text="Cpf do Cliente")
         self.labelCpfCliente.pack(side="left")
-
         self.inputCpfCliente = tk.Entry(self.frameCpfCliente, width=11)
         self.inputCpfCliente.pack(side="left")
 
@@ -92,9 +110,7 @@ class LimiteNotaFiscal(tk.Toplevel):
         self.buttonSubmit.pack(side="left")
         self.buttonSubmit.bind("<Button>", controle.enterQuantProd)
 
-        self.labelEspacoProd = tk.Label(self.frameFechaNota, text="")
         self.labelEspacoProdSegundo = tk.Label(self.frameFechaNota, text="")
-        self.labelEspacoProd.pack(side="top")
         self.labelEspacoProdSegundo.pack(side="top")
         self.buttonFechaNf = tk.Button(self.frameFechaNota, text="Finaliza Nota Fiscal")
         self.buttonFechaNf.pack(side="left")
@@ -109,11 +125,13 @@ class LimiteAvisos:
 class ControllerCriaNotaFicasl:
     def __init__(self, controlador):
         self.controlador = controlador
-        self.idNotaFiscal = 0
         self.ctrlProduto = pd.ControlProduto(self)
         self.ctrlCliente = cl.ControllerCliente(self)
+
+        self.listaProdutos = []
+        self.atualizaListaProdutos()
+
         self.listaNotaFiscal = []
-        self.listaProdutosAdicionados = []
         self.carregaNotaFiscal()
 
     def cadastraNotaFiscal(self):
@@ -122,39 +140,26 @@ class ControllerCriaNotaFicasl:
         listaClienteNome = []
         for cliente in self.ctrlCliente.listaClientes:
             listaClienteNome.append(cliente.nome)
-d
+
         self.limiteCadastraNotaFiscal = LimiteNotaFiscal(
             self, self.ctrlProduto.listaProdutos, listaClienteNome
         )
 
-    def criaNotaFiscal(self):
+    def criaNotaFiscal(self, event):
+        for nf in self.listaNotaFiscal:
+            if nf.idNota == self.limiteCadastraNotaFiscal.inputNumNotaInput.get():
+                quantidade = nf.quantidade
+                for prod in self.listaProdutos:
+                    if prod.codNum == nf.idProduto:
+                        prod.quantEstoq -= quantidade
+                        self.salvaProduto()
+
         self.limiteAviso = LimiteAvisos("Sucesso", "Nota Fiscal finalizada.")
         self.limiteCadastraNotaFiscal.inputCpfCliente.delete(
             0, len(self.limiteCadastraNotaFiscal.inputCpfCliente.get())
         )
+
         self.salvaListaNotaFisca()
-        # idNotaFiscal = self.idNotaFiscal
-        # clienteSlc = self.ctrlCliente.getCliente(
-        #     int(self.limiteCadastraNotaFiscal.inputCpfCliente.get())
-        # )
-        # idCliente = clienteSlc.cpf
-        # indice = self.limiteCadastraNotaFiscal.listBox.curselection()
-        # if indice:
-        #     # Obtém o valor da linha selecionada
-        #     produtoSlc = self.limiteCadastraNotaFiscal.listBox.get(indice)
-        #     produto = self.ctrlProduto.getProdutoDesc(produtoSlc)
-        #     idProduto = produto.codNum
-        # else:
-        #     self.limiteAviso = LimiteAvisos("Erro", "Nenhum produto selecionado")
-
-        # dataLancamento = datetime.datetime.now()
-        # dataFormatada = dataLancamento.strftime("%d/%m/%Y")
-
-        # notaFiscal = NotaFiscal(
-        #     idNotaFiscal, idProduto, idCliente, dataFormatada, quantidade
-        # )
-        # self.listaNotaFiscal.append(notaFiscal)
-        # self.salvaListaNotaFisca()
 
     def enterBuscaCliente(self, event):
         self.ctrlCliente.atualizaListaClientes()
@@ -189,11 +194,19 @@ d
             self.limiteAviso = LimiteAvisos("Erro", "Nenhum produto selecionado")
 
         ####################
-        idNotaFiscal = self.idNotaFiscal
-        clienteSlc = self.ctrlCliente.getCliente(
-            int(self.limiteCadastraNotaFiscal.inputCpfCliente.get())
-        )
-        idCliente = clienteSlc.cpf
+        idNotaFiscal = self.limiteCadastraNotaFiscal.inputNumNotaInput.get()
+
+        inputCliente = self.limiteCadastraNotaFiscal.inputCpfCliente.get()
+        if inputCliente is None:
+            self.limiteAviso = LimiteAvisos("Erro", "Nenhum cliente selecionado")
+        else:
+            clienteSlc = self.ctrlCliente.getCliente(int(inputCliente))
+
+        if clienteSlc is None:
+            self.limiteAviso = LimiteAvisos("Erro", "Cliente não encontrado")
+        else:
+            idCliente = clienteSlc.cpf
+
         indice = self.limiteCadastraNotaFiscal.listBox.curselection()
         if indice:
             # Obtém o valor da linha selecionada
@@ -203,11 +216,12 @@ d
         else:
             self.limiteAviso = LimiteAvisos("Erro", "Nenhum produto selecionado")
 
-        dataLancamento = datetime.datetime.now()
-        dataFormatada = dataLancamento.strftime("%d/%m/%Y")
+        dataLancamento = self.limiteCadastraNotaFiscal.inputDataNota.get()
+        if dataLancamento is None:
+            self.limiteAviso = LimiteAvisos("Erro", "Adicione data a nota fiscal")
 
         notaFiscal = NotaFiscal(
-            idNotaFiscal, idProduto, idCliente, dataFormatada, quantidade
+            idNotaFiscal, idProduto, idCliente, dataLancamento, quantidade
         )
         self.listaNotaFiscal.append(notaFiscal)
 
@@ -216,12 +230,22 @@ d
     def carregaNotaFiscal(self):
         if not os.path.isfile("NotaFiscal.pickle"):
             self.listaNotaFiscal = []
-            self.idNotaFiscal = 0
+
         else:
             with open("NotaFiscal.pickle", "rb") as f:
                 self.listaNotaFiscal = pickle.load(f)
-                self.idNotaFiscal = self.listaNotaFiscal[-1].idNota
 
     def salvaListaNotaFisca(self):
         with open("NotaFiscal.pickle", "wb") as f:
             pickle.dump(self.listaNotaFiscal, f)
+
+    def atualizaListaProdutos(self):
+        if not os.path.isfile("Produtos.pickle"):
+            self.listaProdutos = []
+        else:
+            with open("Produtos.pickle", "rb") as f:
+                self.listaProdutos = pickle.load(f)
+
+    def salvaProduto(self):
+        with open("Produtos.pickle", "wb") as f:
+            pickle.dump(self.listaProdutos, f)

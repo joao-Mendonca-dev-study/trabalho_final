@@ -106,6 +106,38 @@ class LimiteMostraProdutos:
     def __init__(self, str):
         messagebox.showinfo("Produtos em estoque: ", str)
 
+
+class LimiteMostraFatura(tk.Toplevel):
+    def __init__(self, controle):
+        tk.Toplevel.__init__(self)
+        self.geometry("250x200")
+        self.title("Consultar Produto")
+        self.controle = controle
+
+        self.frameCodNum = tk.Frame(self)
+        self.frameButton = tk.Frame(self)
+
+        self.frameCodNum.pack()
+        self.frameButton.pack()
+
+        self.labelCodNum = tk.Label(self.frameCodNum, text="Digite o código do produto")
+        self.labelCodNum.pack(side="left")
+
+        self.inputCodNum = tk.Entry(self.frameCodNum, width=10)
+        self.inputCodNum.pack(side="left")
+
+        self.buttonSubmit = tk.Button(self.frameButton, text="Enter")
+        self.buttonSubmit.pack(side="left")
+        self.buttonSubmit.bind("<Button>", controle.consultaFaturamentoEnter)
+
+        self.buttonFecha = tk.Button(self.frameButton, text="Concluído")
+        self.buttonFecha.pack(side="left")
+        self.buttonFecha.bind("<Button>", controle.fechaHandlerFaturamento)
+
+    def mostraJanela(self, titulo, msg):
+        messagebox.showinfo(titulo, msg)
+
+
 class LimiteConsultaProduto(tk.Toplevel):
     def __init__(self, controle):
         tk.Toplevel.__init__(self)
@@ -140,9 +172,15 @@ class LimiteConsultaProduto(tk.Toplevel):
 
         self.inputCodNum = tk.Entry(self.frameCodNum, width=10)
         self.inputDescricao = tk.Entry(self.frameDescricao, width=20, state="readonly")
-        self.inputPrecoCompra = tk.Entry(self.framePrecoCompra, width=20, state="readonly")
-        self.inputValorVenda = tk.Entry(self.frameValorVenda, width=15, state="readonly")
-        self.inputQuantEstoq = tk.Entry(self.frameQuantEstoq, width=20, state="readonly")
+        self.inputPrecoCompra = tk.Entry(
+            self.framePrecoCompra, width=20, state="readonly"
+        )
+        self.inputValorVenda = tk.Entry(
+            self.frameValorVenda, width=15, state="readonly"
+        )
+        self.inputQuantEstoq = tk.Entry(
+            self.frameQuantEstoq, width=20, state="readonly"
+        )
         self.inputCodNum.pack(side="left")
         self.inputDescricao.pack(side="left")
         self.inputPrecoCompra.pack(side="left")
@@ -160,11 +198,12 @@ class LimiteConsultaProduto(tk.Toplevel):
     def mostraJanela(self, titulo, msg):
         messagebox.showinfo(titulo, msg)
 
+
 class ControlProduto:
     def __init__(self, controlador):
         self.controlador = controlador
         self.listaProdutos = []
-
+        self.listaNF = []
         if not os.path.isfile("Produtos.pickle"):
             self.listaProdutos = []
         else:
@@ -178,6 +217,12 @@ class ControlProduto:
     def getProduto(self, codigo):
         for pd in self.listaProdutos:
             if pd.codNum == codigo:
+                return pd
+        return None
+
+    def getProdutoDesc(self, descricao):
+        for pd in self.listaProdutos:
+            if pd.descricao == descricao:
                 return pd
         return None
 
@@ -222,31 +267,29 @@ class ControlProduto:
             produto = self.getProduto(codNum)
             if produto:
                 self.limiteConsulta.inputDescricao.config(state="normal")
-                self.limiteConsulta.inputDescricao.delete(0,END)
+                self.limiteConsulta.inputDescricao.delete(0, END)
                 self.limiteConsulta.inputDescricao.insert(0, produto.descricao)
                 self.limiteConsulta.inputDescricao.config(state="readonly")
 
                 self.limiteConsulta.inputPrecoCompra.config(state="normal")
-                self.limiteConsulta.inputPrecoCompra.delete(0,END)
+                self.limiteConsulta.inputPrecoCompra.delete(0, END)
                 self.limiteConsulta.inputPrecoCompra.insert(0, produto.precoCompra)
                 self.limiteConsulta.inputPrecoCompra.config(state="readonly")
 
                 self.limiteConsulta.inputValorVenda.config(state="normal")
-                self.limiteConsulta.inputValorVenda.delete(0,END)
+                self.limiteConsulta.inputValorVenda.delete(0, END)
                 self.limiteConsulta.inputValorVenda.insert(0, produto.valorVenda)
                 self.limiteConsulta.inputValorVenda.config(state="readonly")
 
                 self.limiteConsulta.inputQuantEstoq.config(state="normal")
-                self.limiteConsulta.inputQuantEstoq.delete(0,END)
+                self.limiteConsulta.inputQuantEstoq.delete(0, END)
                 self.limiteConsulta.inputQuantEstoq.insert(0, produto.quantEstoq)
                 self.limiteConsulta.inputQuantEstoq.config(state="readonly")
 
                 self.atualizaListaProdutos()
                 # self.clearHandler(event)
             else:
-                self.limiteConsulta.mostraJanela(
-                    "Falha", "Produto nao cadastrado"
-                )
+                self.limiteConsulta.mostraJanela("Falha", "Produto nao cadastrado")
                 self.atualizaListaProdutos()
                 # self.clearHandler(event)
         except ValueError as error:
@@ -268,11 +311,12 @@ class ControlProduto:
         self.limiteCadastra.inputQuantEstoq.delete(
             0, len(self.limiteCadastra.inputQuantEstoq.get())
         )
-        
+
     def fechaHandler(self, event):
         self.limiteCadastra.destroy()
 
     def mostraProdutos(self):
+        self.atualizaListaProdutos()
         strTexto = "Código -- Descrição  --  Quantidade\n"
         for prod in self.listaProdutos:
             strTexto += (
@@ -292,6 +336,13 @@ class ControlProduto:
             with open("Produtos.pickle", "rb") as f:
                 self.listaProdutos = pickle.load(f)
 
+    def atualizaListaNf(self):
+        if not os.path.isfile("NotaFiscal.pickle"):
+            self.listaNF = []
+        else:
+            with open("NotaFiscal.pickle", "rb") as f:
+                self.listaNF = pickle.load(f)
+
     def limpaEstoque(self):
         self.limiteCadastra = LimiteCadastraProduto(self)
         if os.path.isfile("Produtos.pickle"):
@@ -302,7 +353,29 @@ class ControlProduto:
                 "Atenção", "Não existe estoque para apagar"
             )
         self.atualizaListaProdutos()
-    
+
     def consultaProduto(self):
         self.limiteConsulta = LimiteConsultaProduto(self)
 
+    def mostraFaturamento(self):
+        self.limiteConsultaFaturamento = LimiteMostraFatura(self)
+
+    def consultaFaturamentoEnter(self, event):
+        codigo = int(self.limiteConsultaFaturamento.inputCodNum.get())
+
+        self.atualizaListaNf()
+        for nf in self.listaNF:
+            total = 0
+            if nf.idProduto == codigo:
+                total += nf.quantidade
+            valor = 0
+            for prod in self.listaProdutos:
+                if prod.codNum == codigo:
+                    valor = prod.valorVenda * total
+
+        self.limiteConsultaFaturamento.mostraJanela(
+            "Valor do faturamento", "R$" + str(valor)
+        )
+
+    def fechaHandlerFaturamento(self, event):
+        self.limiteConsultaFaturamento.destroy()

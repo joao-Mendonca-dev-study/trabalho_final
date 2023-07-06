@@ -41,23 +41,13 @@ class LimitePrincipal:
             label="Clientes", command=self.controle.consultaCliente
         )
         self.consultaMenu.add_command(
-            label="Faturamento por Produtos"
+            label="Faturamento por Produtos", command=self.controle.mostraFaturamento
         )
-        self.consultaMenu.add_command(
-            label="Faturamento por Clientes"
-        )
-        self.consultaMenu.add_command(
-            label="Faturamento no Periodo"
-        )
-        self.consultaMenu.add_command(
-            label="Lucro no Periodo"
-        )
-        self.consultaMenu.add_command(
-            label="Vendas para Cliente"
-        )
-        self.consultaMenu.add_command(
-            label="Produtos mais Vendidos"
-        )
+        self.consultaMenu.add_command(label="Faturamento por Clientes")
+        self.consultaMenu.add_command(label="Faturamento no Periodo")
+        self.consultaMenu.add_command(label="Lucro no Periodo")
+        self.consultaMenu.add_command(label="Vendas para Cliente")
+        self.consultaMenu.add_command(label="Produtos mais Vendidos")
 
         self.nFMenu.add_command(label="Insere", command=controle.cadastraNotaFiscal)
         self.nFMenu.add_command(label="Mostra")
@@ -103,12 +93,16 @@ class ControlePrincipal:
 
     def cadastraNotaFiscal(self):
         self.ctrlNotaFiscal.cadastraNotaFiscal()
-    
+
     def consultaProduto(self):
         self.ctrlProduto.consultaProduto()
-    
+
     def consultaCliente(self):
         self.ctrlCliente.consultarCliente()
+
+    def mostraFaturamento(self):
+        self.ctrlProduto.mostraFaturamento()
+
 
 if __name__ == "__main__":
     c = ControlePrincipal()
